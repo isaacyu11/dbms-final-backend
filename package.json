@@ -1,0 +1,42 @@
+{
+  "name": "dbmsfinal",
+  "version": "1.0.0",
+  "description": "library server",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "nodemon server.js",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/isaacyu11/dbms-final-backend.git"
+  },
+  "author": "isaac",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/isaacyu11/dbms-final-backend/issues"
+  },
+  "homepage": "https://github.com/isaacyu11/dbms-final-backend#readme",
+  "dependencies": {
+    "bcrypt": "^5.1.1",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.0.3",
+    "morgan": "^1.10.0",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "eslint": "^8.56.0",
+    "eslint-config-airbnb": "^19.0.4",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-import": "^2.29.1",
+    "eslint-plugin-jsx-a11y": "^6.8.0",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-prettier": "^5.1.2",
+    "eslint-plugin-react": "^7.33.2",
+    "nodemon": "^3.0.2",
+    "prettier": "^3.1.1"
+  }
+}
