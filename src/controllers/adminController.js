@@ -92,7 +92,7 @@ exports.getUsers = async (req, res) => {
     }
     const users = await User.find(query);
     if (users.length === 0) {
-      return res.status(404).send("User not found");
+      throw new Error("User not found");
     }
     res.status(200).json(users);
   } catch (error) {
