@@ -6,13 +6,10 @@ const bookController = require("../controllers/bookController");
 
 const router = express.Router();
 
-router.route("/").get(verifyToken.verifyToken, bookController.getBooks);
-router
-  .route("/borrow")
-  .patch(verifyToken.verifyToken, bookController.borrowBooks);
-router
-  .route("/return")
-  .patch(verifyToken.verifyToken, bookController.returnBooks);
-router.route("/add").post(bookController.addBooks);
+router.use(verifyToken.verifyUser);
+
+router.route("/").get(bookController.getBooks);
+router.route("/borrow").patch(bookController.borrowBooks);
+router.route("/return").patch(bookController.returnBooks);
 
 module.exports = router;

@@ -3,6 +3,7 @@
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const User = require("../models/userModel");
+const Admin = require("../models/adminModel");
 const Book = require("../models/bookModel");
 const BorrowHistory = require("../models/borrowHistoryModel");
 
@@ -19,24 +20,32 @@ exports.register = async (req, res) => {
     if (error.code === 11000) {
       return res.status(409).json({ errMsg: "UserID already exists" });
     }
-    res.status(500).json({ errMsg: "Internal Server Error" });
+    res.status(500).json({ errMsg: error.message });
   }
 };
 
 exports.login = async (req, res) => {
   try {
     const { userId, password } = req.body;
+    let user;
+    let isAdmin = false;
+
+    if (userId.startsWith("A")) {
+      user = await Admin.findOne({ userId });
+      isAdmin = true;
+    } else {
+      user = await User.findOne({ userId });
+    }
 
     // 根据用户名查找用户
-    const user = await User.findOne({ userId });
     if (!user) {
-      return res.status(400).json({ errMsg: "User not found" });
+      throw new Error("User not found");
     }
 
     // 验证密码
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(400).json({ errMsg: "password not match" });
+      throw new Error("password not match");
     }
 
     // 生成JWT（JSON Web Token）
@@ -44,9 +53,15 @@ exports.login = async (req, res) => {
       expiresIn: "1h",
     });
 
-    res.status(200).json({ token });
+    res.status(200).json({ token, isAdmin });
   } catch (error) {
-    res.status(500).json({ errMsg: "Internal Server Error" });
+    if (error === "User not found") {
+      return res.status(404).json({ errMsg: error });
+    }
+    if (error === "password not match") {
+      return res.status(400).json({ errMsg: error });
+    }
+    res.status(500).json({ errMsg: error.message });
   }
 };
 

@@ -5,6 +5,7 @@ const morgan = require("morgan");
 
 const userRouter = require("./src/routes/userRoute");
 const bookRouter = require("./src/routes/bookRoute");
+const adminRouter = require("./src/routes/adminRoute");
 
 const app = express();
 
@@ -22,5 +23,6 @@ app.use((req, res, next) => {
 // 2) ROUTES
 app.use("/user", userRouter);
 app.use("/book", bookRouter);
+app.use("/admin", adminRouter);
 
 module.exports = app;

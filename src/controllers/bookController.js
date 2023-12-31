@@ -1,11 +1,10 @@
 "use strict";
 
 // eslint-disable-next-line import/no-extraneous-dependencies
-const { v4: uuidv4 } = require("uuid");
 const Book = require("../models/bookModel");
 const BorrowHistory = require("../models/borrowHistoryModel");
 
-//#region 1. Get books
+//#region Get books
 exports.getBooks = async (req, res) => {
   try {
     const query = {};
@@ -21,18 +20,21 @@ exports.getBooks = async (req, res) => {
     if (req.query.catergory) {
       query.catergory = req.query.catergory;
     }
-    const book = await Book.find(query);
-    if (book.length === 0) {
-      return res.status(404).send("Book not found");
+    const books = await Book.find(query);
+    if (books.length === 0) {
+      throw new Error("Book not found");
     }
-    res.status(200).json(book);
+    res.status(200).json(books);
   } catch (error) {
+    if (error.message === "Book not found") {
+      return res.status(404).json({ errMsg: error.message });
+    }
     res.status(500).json({ errMsg: error.message });
   }
 };
 //#endregion
 
-//#region 2. Borrow books
+//#region Borrow books
 exports.borrowBooks = async (req, res) => {
   try {
     const { userId, bookId } = req.body;
@@ -68,7 +70,7 @@ exports.borrowBooks = async (req, res) => {
 };
 //#endregion
 
-//#region 3. Return books
+//#region Return books
 exports.returnBooks = async (req, res) => {
   try {
     const { userId, bookId } = req.body;
@@ -107,72 +109,6 @@ exports.returnBooks = async (req, res) => {
       return res.status(409).json({ errMsg: error.message });
     }
     res.status(500).json({ errMsg: error.message });
-  }
-};
-//#endregion
-
-//#region 4. add new book
-exports.addBooks = async (req, res) => {
-  try {
-    const bookId = uuidv4();
-    // eslint-disable-next-line node/no-unsupported-features/es-syntax
-    const newBook = await Book.create({ bookId, ...req.body });
-
-    res.status(200).json({ newBook });
-  } catch (error) {
-    if (error.name === "ValidationError") {
-      return res.status(400).json({ errMsg: error.message });
-    }
-    res.status(500).json({ errMsg: error.message });
-  }
-};
-//#endregion
-
-//#region 5. Create a book
-exports.updateBook = async (req, res) => {
-  try {
-    const book = await Book.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-      runValidators: true,
-    });
-    if (!book) {
-      throw new Error("ID 不存在！");
-    } else {
-      res.status(200).json({
-        status: "success",
-        data: {
-          book,
-        },
-      });
-    }
-  } catch (err) {
-    console.log(err);
-    res.status(400).json({
-      status: "fail",
-      message: err.message,
-    });
-  }
-};
-//#endregion
-
-//#region 6. Delete a book
-exports.deleteBook = async (req, res) => {
-  try {
-    const book = await Book.findByIdAndDelete(req.body.bookId);
-    if (!book) {
-      throw new Error("ID 不存在！");
-    } else {
-      res.status(204).json({
-        status: "success",
-        data: null,
-      });
-    }
-  } catch (err) {
-    console.log(err);
-    res.status(400).json({
-      status: "fail",
-      message: err.message,
-    });
   }
 };
 //#endregion
