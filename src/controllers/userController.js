@@ -7,6 +7,7 @@ const Admin = require("../models/adminModel");
 const Book = require("../models/bookModel");
 const BorrowHistory = require("../models/borrowHistoryModel");
 
+//#region Register
 exports.register = async (req, res) => {
   try {
     // 创建新用户
@@ -23,7 +24,9 @@ exports.register = async (req, res) => {
     res.status(500).json({ errMsg: error.message });
   }
 };
+//#endregion
 
+//#region Login
 exports.login = async (req, res) => {
   try {
     const { userId, password } = req.body;
@@ -64,7 +67,9 @@ exports.login = async (req, res) => {
     res.status(500).json({ errMsg: error.message });
   }
 };
+//#endregion
 
+//#region Get borrowed books
 exports.borrowed = async (req, res) => {
   try {
     const { userId } = req;
@@ -95,3 +100,4 @@ exports.borrowed = async (req, res) => {
     res.status(500).json({ errMsg: error.message });
   }
 };
+//#endregion

@@ -107,7 +107,7 @@ exports.getUsers = async (req, res) => {
       query.userId = req.query.userId;
     }
     if (req.query.name) {
-      query.name = req.query.name;
+      query.name = new RegExp(req.query.name, "i");
     }
     const users = await User.find(query);
     if (users.length === 0) {
@@ -163,28 +163,36 @@ exports.deleteUser = async (req, res) => {
 exports.getBorrowHistory = async (req, res) => {
   try {
     const query = {};
-    if (req.query.userId) {
-      query.userId = req.query.userId;
+    if (req.query.name) {
+      const filter = { name: new RegExp(req.query.name, "i") };
+      const user = await User.findOne(filter);
+      if (user) {
+        query.userId = user.userId; // 确保这里使用正确的字段
+      }
     }
-    if (req.query.bookId) {
-      query.bookId = req.query.bookId;
+    if (req.query.title) {
+      const filter = { name: new RegExp(req.query.name, "i") };
+      const user = await User.findOne(filter);
+      if (user) {
+        query.userId = user.userId; // 确保这里使用正确的字段
+      }
     }
 
     const borrowHistory = await BorrowHistory.aggregate([
       { $match: query },
       {
         $lookup: {
-          from: "users", // 'users' 应该是 User 集合的集合名
+          from: "users",
           localField: "userId",
-          foreignField: "_id", // 假设 User 集合使用 '_id' 作为主键
+          foreignField: "userId",
           as: "user",
         },
       },
       {
         $lookup: {
-          from: "books", // 'books' 应该是 Book 集合的集合名
+          from: "books",
           localField: "bookId",
-          foreignField: "_id", // 假设 Book 集合使用 '_id' 作为主键
+          foreignField: "bookId",
           as: "book",
         },
       },
