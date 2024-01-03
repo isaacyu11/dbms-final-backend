@@ -23,7 +23,7 @@ const bookSchema = mongoose.Schema({
     type: String,
     required: [true, "book language is required"],
   },
-  catergory: {
+  category: {
     type: String,
     required: [true, "book catergory is required"],
   },

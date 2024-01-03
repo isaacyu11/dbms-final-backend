@@ -31,7 +31,7 @@ exports.login = async (req, res) => {
     let isAdmin = false;
 
     if (userId.startsWith("A")) {
-      user = await Admin.findOne({ userId });
+      user = await Admin.findOne({ adminId: userId });
       isAdmin = true;
     } else {
       user = await User.findOne({ userId });
@@ -49,16 +49,16 @@ exports.login = async (req, res) => {
     }
 
     // 生成JWT（JSON Web Token）
-    const token = jwt.sign({ userId }, "asshole", {
+    const token = jwt.sign({ userId, isAdmin }, process.env.JWT_SECRET, {
       expiresIn: "1h",
     });
 
     res.status(200).json({ token, isAdmin });
   } catch (error) {
-    if (error === "User not found") {
+    if (error.message === "User not found") {
       return res.status(404).json({ errMsg: error });
     }
-    if (error === "password not match") {
+    if (error.massage === "password not match") {
       return res.status(400).json({ errMsg: error });
     }
     res.status(500).json({ errMsg: error.message });
@@ -67,7 +67,7 @@ exports.login = async (req, res) => {
 
 exports.borrowed = async (req, res) => {
   try {
-    const { userId } = req.body;
+    const { userId } = req;
     const filter = { userId, returnDate: { $exists: false } };
 
     const borrowedRecord = await BorrowHistory.find(filter); // array

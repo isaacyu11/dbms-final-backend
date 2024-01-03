@@ -17,8 +17,8 @@ exports.getBooks = async (req, res) => {
     if (req.query.language) {
       query.language = req.query.language;
     }
-    if (req.query.catergory) {
-      query.catergory = req.query.catergory;
+    if (req.query.category) {
+      query.category = req.query.category;
     }
     const books = await Book.find(query);
     if (books.length === 0) {
@@ -37,7 +37,7 @@ exports.getBooks = async (req, res) => {
 //#region Borrow books
 exports.borrowBooks = async (req, res) => {
   try {
-    const { userId, bookId } = req.body;
+    const { bookId } = req.body;
     const filter = { bookId, isAvailable: true };
     const update = { isAvailable: false };
 
@@ -50,7 +50,7 @@ exports.borrowBooks = async (req, res) => {
     }
 
     const borrowRecord = await BorrowHistory.create({
-      userId,
+      userId: req.userId,
       bookId,
       borrowDate: new Date(),
     });
@@ -73,7 +73,7 @@ exports.borrowBooks = async (req, res) => {
 //#region Return books
 exports.returnBooks = async (req, res) => {
   try {
-    const { userId, bookId } = req.body;
+    const { bookId } = req.body;
     const filter = { bookId, isAvailable: false };
     const update = { isAvailable: true };
 
@@ -85,7 +85,11 @@ exports.returnBooks = async (req, res) => {
       throw new Error("book has been returned");
     }
 
-    const historyFilter = { userId, bookId, returnDate: { $exists: false } };
+    const historyFilter = {
+      userId: req.userId,
+      bookId,
+      returnDate: { $exists: false },
+    };
     const historyUpdate = { returnDate: new Date() };
 
     const borrowRecord = await BorrowHistory.findOneAndUpdate(

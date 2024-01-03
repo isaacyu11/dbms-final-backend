@@ -27,35 +27,45 @@ exports.addBook = async (req, res) => {
 exports.updateBook = async (req, res) => {
   try {
     const updateObj = {};
-    Object.keys(req.body).forEach((key) => {
-      if (!req.body[key] || key !== "id") {
-        updateObj[key] = req.body[key];
-      }
-    });
+    const filter = { bookId: req.body.bookId };
 
-    if (Object.keys(updateObj).length === 0) {
-      return res.status(400).json({ errMsg: "No valid fields to update" });
-    }
-
-    const book = await Book.findByIdAndUpdate(req.body.id, updateObj, {
-      new: true,
-      runValidators: true,
-    });
+    const book = await Book.findOne(filter);
 
     if (!book) {
       throw new Error("Book not found");
     }
 
-    res.status(200).json({ book });
+    if (!book.isAvailable) {
+      throw new Error("Book is not available for update");
+    }
+
+    Object.keys(req.body).forEach((key) => {
+      if (!req.body[key] || key !== "bookId") {
+        updateObj[key] = req.body[key];
+      }
+    });
+
+    if (Object.keys(updateObj).length === 0) {
+      throw new Error("No valid fields to update");
+    }
+
+    const newBook = await Book.findOneAndUpdate(filter, updateObj, {
+      new: true,
+      runValidators: true,
+    });
+    res.status(200).json({ newBook });
   } catch (error) {
-    if (error === "No valid fields to update") {
+    if (error.message === "No valid fields to update") {
       return res.status(400).json({ errMsg: error.message });
     }
     if (error.name === "ValidationError") {
       return res.status(400).json({ errMsg: error.message });
     }
-    if (error === "Book not found") {
+    if (error.message === "Book not found") {
       return res.status(404).json({ errMsg: error.message });
+    }
+    if (error.message === "Book is not available for update") {
+      return res.status(400).json({ errMsg: error.message });
     }
     res.status(500).json({ errMsg: error.message });
   }
@@ -65,15 +75,24 @@ exports.updateBook = async (req, res) => {
 //#region Delete a book
 exports.deleteBook = async (req, res) => {
   try {
-    const book = await Book.findByIdAndDelete(req.body.bookId);
+    const book = await Book.findOne({ bookId: req.body.bookId });
+
     if (!book) {
       throw new Error("Book not found");
     }
 
+    if (!book.isAvailable) {
+      throw new Error("Book is not available for deletion");
+    }
+
+    await Book.findOneAndDelete({ bookId: req.body.bookId });
     res.status(204).send();
   } catch (error) {
-    if (error === "Book not found") {
+    if (error.message === "Book not found") {
       return res.status(404).json({ errMsg: error.message });
+    }
+    if (error.message === "Book is not available for deletion") {
+      return res.status(400).json({ errMsg: error.message });
     }
     res.status(500).json({ errMsg: error.message });
   }
@@ -107,15 +126,33 @@ exports.getUsers = async (req, res) => {
 //#region Delete a user
 exports.deleteUser = async (req, res) => {
   try {
-    const user = await User.findByIdAndDelete(req.body.userId);
+    const { userId } = req.body;
+    const borrowHistory = await BorrowHistory.find({
+      userId,
+      returnDate: { $exists: false },
+    });
+
+    if (borrowHistory.length !== 0) {
+      const borrowedBookId = borrowHistory.map((record) => record.bookId);
+      const books = await Book.find(
+        { bookId: { $in: borrowedBookId } },
+        { title: 1, _id: 0 },
+      );
+      throw new Error(`User has borrowed books ${books}`);
+    }
+
+    const user = await User.findOneAndDelete({ userId });
     if (!user) {
       throw new Error("User not found");
     }
 
     res.status(204).send();
   } catch (error) {
-    if (error === "User not found") {
+    if (error.message === "User not found") {
       return res.status(404).json({ errMsg: error.message });
+    }
+    if (error.message.startsWith("User has borrowed books")) {
+      return res.status(400).json({ errMsg: error.message });
     }
     res.status(500).json({ errMsg: error.message });
   }
@@ -132,7 +169,40 @@ exports.getBorrowHistory = async (req, res) => {
     if (req.query.bookId) {
       query.bookId = req.query.bookId;
     }
-    const borrowHistory = await BorrowHistory.find(query);
+
+    const borrowHistory = await BorrowHistory.aggregate([
+      { $match: query },
+      {
+        $lookup: {
+          from: "users", // 'users' 应该是 User 集合的集合名
+          localField: "userId",
+          foreignField: "_id", // 假设 User 集合使用 '_id' 作为主键
+          as: "user",
+        },
+      },
+      {
+        $lookup: {
+          from: "books", // 'books' 应该是 Book 集合的集合名
+          localField: "bookId",
+          foreignField: "_id", // 假设 Book 集合使用 '_id' 作为主键
+          as: "book",
+        },
+      },
+      {
+        $unwind: "$user",
+      },
+      {
+        $unwind: "$book",
+      },
+      {
+        $project: {
+          name: "$user.name",
+          title: "$book.title",
+          borrowDate: 1,
+          returnDate: 1,
+        },
+      },
+    ]);
     if (borrowHistory.length === 0) {
       throw new Error("Borrow history not found");
     }
